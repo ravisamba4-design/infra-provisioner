@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>infra-provisioner</title>
+<style>
+  :root {
+    --bg: #0b0d0f;
+    --panel: #111418;
+    --line: #23272d;
+    --text: #d8dce0;
+    --dim: #7a828c;
+    --accent: #4fd1a5;
+    --amber: #e0a94e;
+    --red: #e05c5c;
+    --mono: "SF Mono", "IBM Plex Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+  }
+
+  header .title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  header .title::before {
+    content: "$ ";
+    color: var(--accent);
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--accent);
+    margin-left: 6px;
+    vertical-align: -2px;
+    animation: blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  header .env {
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .env .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dim);
+    margin-right: 6px;
+  }
+
+  .env.online .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .env.offline .dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  section { margin-top: 40px; }
+
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+    margin-bottom: 12px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 20px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 140px 1fr;
+    gap: 12px;
+    align-items: end;
+  }
+
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+  }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  select, input[type=text] {
+    width: 100%;
+    background: #05070a;
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 9px 10px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  select:focus, input[type=text]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type=text]::placeholder { color: #4a5058; }
+
+  button {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.05s;
+  }
+
+  button:active { transform: scale(0.98); }
+
+  .btn-run {
+    background: var(--accent);
+    color: #052018;
+  }
+  .btn-run:hover { filter: brightness(1.1); }
+  .btn-run:disabled { background: #2a2f35; color: var(--dim); cursor: not-allowed; }
+
+  .action-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .action-toggle button {
+    flex: 1;
+    background: transparent;
+    color: var(--dim);
+    border-radius: 0;
+    font-size: 12px;
+  }
+  .action-toggle button.active[data-action="create"] {
+    background: rgba(79, 209, 165, 0.15);
+    color: var(--accent);
+  }
+  .action-toggle button.active[data-action="delete"] {
+    background: rgba(224, 92, 92, 0.15);
+    color: var(--red);
+  }
+
+  .hint {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 10px;
+  }
+  .hint code {
+    color: #9aa2ab;
+    background: #05070a;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  #feedback {
+    margin-top: 14px;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    display: none;
+  }
+  #feedback.show { display: block; }
+  #feedback.ok { background: rgba(79, 209, 165, 0.1); color: var(--accent); border: 1px solid rgba(79,209,165,0.3); }
+  #feedback.err { background: rgba(224, 92, 92, 0.1); color: var(--red); border: 1px solid rgba(224,92,92,0.3); }
+  #feedback.pending { background: rgba(224, 169, 78, 0.1); color: var(--amber); border: 1px solid rgba(224,169,78,0.3); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    font-weight: 500;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  tbody td {
+    padding: 11px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: #c2c8ce;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(255,255,255,0.015); }
+
+  .req-id {
+    color: var(--dim);
+    font-size: 11.5px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .badge.create { background: rgba(79,209,165,0.12); color: var(--accent); }
+  .badge.delete { background: rgba(224,92,92,0.12); color: var(--red); }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+  }
+  .status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .status.complete { color: var(--accent); }
+  .status.complete::before { background: var(--accent); }
+  .status.failed { color: var(--red); }
+  .status.failed::before { background: var(--red); }
+  .status.pending { color: var(--amber); }
+  .status.pending::before { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+
+  .err-msg {
+    color: var(--dim);
+    font-size: 11px;
+    max-width: 220px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--dim);
+    font-size: 12.5px;
+  }
+
+  .refresh-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .refresh-row .label { margin-bottom: 0; }
+
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  .refresh-btn:hover { color: var(--text); border-color: #3a3f46; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--dim);
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title">infra-provisioner<span class="cursor"></span></div>
+    <div class="env" id="envStatus"><span class="dot"></span>checking</div>
+  </header>
+
+  <section>
+    <div class="label">submit request</div>
+    <div class="panel">
+      <div class="form-row">
+        <div class="field">
+          <label>action</label>
+          <div class="action-toggle" id="actionToggle">
+            <button type="button" data-action="create" class="active">create</button>
+            <button type="button" data-action="delete">delete</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>resource type</label>
+          <select id="resourceType">
+            <option value="s3_bucket">s3_bucket</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: span 1;">
+          <label>&nbsp;</label>
+          <button class="btn-run" id="submitBtn" style="width:100%">run →</button>
+        </div>
+        <div class="field" style="grid-column: 1 / -1; order: -1;">
+          <label>bucket name</label>
+          <input type="text" id="bucketName" placeholder="my-bucket-name-001">
+        </div>
+      </div>
+      <div class="hint">globally unique name required · lowercase, numbers, hyphens only · e.g. <code>infra-test-yourname-001</code></div>
+      <div id="feedback"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="refresh-row">
+      <div class="label">request history</div>
+      <button class="refresh-btn" id="refreshBtn">↻ refresh</button>
+    </div>
+    <div class="panel" style="padding: 4px 16px;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:22%">request</th>
+            <th style="width:12%">action</th>
+            <th style="width:26%">bucket</th>
+            <th style="width:14%">status</th>
+            <th style="width:26%">detail</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="5" class="empty">loading history…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>resource_type: s3_bucket only · more types land in a later phase</span>
+    <span id="countLabel"></span>
+  </footer>
+
+</div>
+
+<script>
+  const ENDPOINT = "https://5tzcwb4qr2kijxie37qhwj3aei0ykiol.lambda-url.eu-north-1.on.aws/";
+
+  let currentAction = "create";
+
+  const actionToggle = document.getElementById("actionToggle");
+  const submitBtn = document.getElementById("submitBtn");
+  const bucketInput = document.getElementById("bucketName");
+  const feedback = document.getElementById("feedback");
+  const historyBody = document.getElementById("historyBody");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const envStatus = document.getElementById("envStatus");
+  const countLabel = document.getElementById("countLabel");
+
+  actionToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    currentAction = btn.dataset.action;
+    [...actionToggle.children].forEach(b => b.classList.toggle("active", b === btn));
+    submitBtn.textContent = currentAction === "delete" ? "run →" : "run →";
+  });
+
+  function showFeedback(kind, msg) {
+    feedback.className = "show " + kind;
+    feedback.textContent = msg;
+  }
+
+  function clearFeedback() {
+    feedback.className = "";
+    feedback.textContent = "";
+  }
+
+  async function callApi(payload) {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    const bucketName = bucketInput.value.trim();
+    if (!bucketName) {
+      showFeedback("err", "bucket name required");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "running…";
+    showFeedback("pending", `${currentAction === "create" ? "creating" : "deleting"} bucket "${bucketName}"…`);
+
+    try {
+      const { data } = await callApi({
+        action: currentAction,
+        resource_type: "s3_bucket",
+        bucket_name: bucketName
+      });
+
+      if (data.status === "complete") {
+        showFeedback("ok", `done · request ${data.request_id.slice(0, 8)} · status: complete`);
+        bucketInput.value = "";
+      } else {
+        showFeedback("err", `failed · ${data.error || "unknown error"}`);
+      }
+    } catch (err) {
+      showFeedback("err", `network error · ${err.message}`);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "run →";
+      loadHistory();
+    }
+  });
+
+  function fmtTime(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+  }
+
+  function renderHistory(items) {
+    if (!items.length) {
+      historyBody.innerHTML = `<tr><td colspan="5" class="empty">no requests yet — submit one above</td></tr>`;
+      countLabel.textContent = "";
+      return;
+    }
+
+    countLabel.textContent = `${items.length} request${items.length === 1 ? "" : "s"} total`;
+
+    historyBody.innerHTML = items.map(item => {
+      const bucket = (item.details && item.details.bucket_name) || "—";
+      const status = item.status || "pending";
+      const detail = status === "failed"
+        ? `<span class="err-msg" title="${escapeHtml(item.error_message || "")}">${escapeHtml(item.error_message || "error")}</span>`
+        : `<span class="req-id">${fmtTime(item.updated_at)}</span>`;
+
+      return `
+        <tr>
+          <td><span class="req-id">${item.request_id.slice(0, 8)}</span><br><span class="req-id">${fmtTime(item.requested_at)}</span></td>
+          <td><span class="badge ${item.action}">${item.action}</span></td>
+          <td>${escapeHtml(bucket)}</td>
+          <td><span class="status ${status}">${status}</span></td>
+          <td>${detail}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function loadHistory() {
+    try {
+      const { data } = await callApi({ action: "list" });
+      const items = data.items || [];
+      items.sort((a, b) => (b.requested_at || "").localeCompare(a.requested_at || ""));
+      renderHistory(items);
+      setEnv(true);
+    } catch (err) {
+      historyBody.innerHTML = `<tr><td colspan="5" class="empty">couldn't load history · ${escapeHtml(err.message)}</td></tr>`;
+      setEnv(false);
+    }
+  }
+
+  function setEnv(online) {
+    envStatus.className = "env " + (online ? "online" : "offline");
+    envStatus.innerHTML = `<span class="dot"></span>${online ? "connected" : "unreachable"}`;
+  }
+
+  refreshBtn.addEventListener("click", loadHistory);
+  bucketInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitBtn.click();
+  });
+
+  loadHistory();
+</script>
+
+</body>
+</html>
