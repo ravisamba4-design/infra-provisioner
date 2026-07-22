@@ -436,6 +436,13 @@
       return;
     }
 
+    if (currentAction === "delete") {
+      const confirmed = confirm(`Delete bucket "${bucketName}"? This cannot be undone.`);
+      if (!confirmed) {
+        return;
+      }
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = "running…";
     showFeedback("pending", `${currentAction === "create" ? "creating" : "deleting"} bucket "${bucketName}"…`);
