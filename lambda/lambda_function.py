@@ -92,6 +92,19 @@ def lambda_handler(event, context):
         update_status(request_id, 'complete')
         return respond(200, {"request_id": request_id, "status": "complete"})
 
+    except s3.exceptions.ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', '')
+        if error_code == 'BucketNotEmpty':
+            friendly_error = "This bucket still has objects in it. Empty the bucket before deleting it."
+        elif error_code == 'BucketAlreadyExists' or error_code == 'BucketAlreadyOwnedByYou':
+            friendly_error = "A bucket with this name already exists. Bucket names must be globally unique."
+        elif error_code == 'NoSuchBucket':
+            friendly_error = "This bucket doesn't exist — it may have already been deleted."
+        else:
+            friendly_error = str(e)
+        update_status(request_id, 'failed', error=friendly_error)
+        return respond(500, {"request_id": request_id, "status": "failed", "error": friendly_error})
+
     except Exception as e:
         update_status(request_id, 'failed', error=str(e))
         return respond(500, {"request_id": request_id, "status": "failed", "error": str(e)})
