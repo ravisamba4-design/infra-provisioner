@@ -3,7 +3,7 @@ import boto3
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
-
+# deployed via CI/CD
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.client('s3')
 table = dynamodb.Table('infra-requests')
