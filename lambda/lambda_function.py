@@ -1,12 +1,25 @@
 import json
 import boto3
 import uuid
+import re
 from datetime import datetime, timezone
 from decimal import Decimal
-# deployed via CI/CD
+
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.client('s3')
 table = dynamodb.Table('infra-requests')
+
+
+def validate_bucket_name(name):
+    if not name:
+        return "Bucket name is required."
+    if len(name) < 3 or len(name) > 63:
+        return "Bucket name must be between 3 and 63 characters."
+    if not re.match(r'^[a-z0-9][a-z0-9.-]*[a-z0-9]$', name):
+        return "Bucket name must use only lowercase letters, numbers, hyphens, or periods, and must start/end with a letter or number."
+    if '..' in name:
+        return "Bucket name cannot contain consecutive periods."
+    return None  # valid
 
 
 def lambda_handler(event, context):
@@ -42,6 +55,12 @@ def lambda_handler(event, context):
 
     if resource_type != 's3_bucket':
         return respond(400, {"error": f"Unsupported resource_type: {resource_type}"})
+
+    # Validate bucket name upfront, before touching AWS
+    if action in ('create', 'delete'):
+        validation_error = validate_bucket_name(bucket_name)
+        if validation_error:
+            return respond(400, {"error": validation_error})
 
     # 1. Write initial 'pending' record
     table.put_item(Item={
