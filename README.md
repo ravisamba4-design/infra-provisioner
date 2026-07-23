@@ -27,15 +27,10 @@ Built as a learning project to understand how the pieces of a real internal plat
 
 ## Project structure
 
-infra-provisioner/
-├── lambda/
-│ └── lambda_function.py # Backend logic
-├── frontend/
-│ └── index.html # Dashboard UI
-├── .github/
-│ └── workflows/
-│ └── deploy.yml # CI/CD pipeline
-└── README.md
+- `lambda/lambda_function.py` — backend logic (the Lambda handler)
+- `frontend/index.html` — dashboard UI
+- `.github/workflows/deploy.yml` — CI/CD pipeline
+- `README.md` — this file
 
 ## Possible future work
 
