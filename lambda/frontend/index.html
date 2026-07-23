@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -438,13 +439,6 @@
     if (!bucketName) {
       showFeedback("err", "bucket name required");
       return;
-    }
-
-    if (currentAction === "delete") {
-      const confirmed = confirm(`Delete bucket "${bucketName}"? This cannot be undone.`);
-      if (!confirmed) {
-        return;
-      }
     }
 
     submitBtn.disabled = true;
