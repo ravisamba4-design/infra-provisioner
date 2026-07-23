@@ -2,12 +2,15 @@ import json
 import boto3
 import uuid
 import re
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.client('s3')
 table = dynamodb.Table('infra-requests')
+
+API_SECRET = os.environ.get('API_SECRET')
 
 
 def validate_bucket_name(name):
@@ -31,6 +34,14 @@ def lambda_handler(event, context):
     body = event
     if 'body' in event and isinstance(event['body'], str):
         body = json.loads(event['body'])
+
+    # Check API secret before doing anything else
+    headers = event.get('headers', {}) or {}
+    # Header keys can arrive in different casing depending on the caller
+    incoming_key = headers.get('x-api-key') or headers.get('X-Api-Key') or body.get('api_key')
+
+    if not API_SECRET or incoming_key != API_SECRET:
+        return respond(401, {"error": "Unauthorized"})
 
     action = body.get('action')
 
@@ -143,7 +154,7 @@ def respond(status_code, body, decimal_safe=False):
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, X-Api-Key',
             'Access-Control-Allow-Methods': 'OPTIONS,POST'
         },
         'body': json.dumps(body, cls=DecimalEncoder) if decimal_safe else json.dumps(body)
