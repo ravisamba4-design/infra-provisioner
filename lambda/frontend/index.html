@@ -389,6 +389,7 @@
 
 <script>
   const ENDPOINT = "https://5tzcwb4qr2kijxie37qhwj3aei0ykiol.lambda-url.eu-north-1.on.aws/";
+  const API_KEY = "x7k2m9p4q1w8"; // must match the API_SECRET env var set in Lambda
 
   let currentAction = "create";
 
@@ -422,7 +423,10 @@
   async function callApi(payload) {
     const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-Key": API_KEY
+      },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
