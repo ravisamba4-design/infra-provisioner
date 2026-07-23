@@ -6,18 +6,7 @@ Built as a learning project to understand how the pieces of a real internal plat
 
 ## How it works
 
-┌─────────────┐ POST ┌──────────────┐
-│ Dashboard │ ─────────────▶ │Lambda Function│
-│ (index.html) │ (w/ API key) │ URL │
-└─────────────┘ ◀───────────── └──────┬───────┘
-JSON │
-│
-┌──────────────┼──────────────┐
-▼ ▼ ▼
-┌──────────┐ ┌────────────┐ ┌──────────┐
-│ DynamoDB │ │ S3 │ │CloudWatch│
-│ (logs) │ │ (resources) │ │ (logs) │
-└──────────┘ └────────────┘ └──────────┘
+**Dashboard → Lambda Function URL → DynamoDB + S3**
 
 1. **Dashboard** (`frontend/index.html`) — a static HTML page where you submit a create/delete request and view request history. Calls the Lambda Function URL directly with a shared API key for basic access control.
 2. **Lambda function** (`lambda/lambda_function.py`) — receives the request, validates it, performs the action (currently: create/delete an S3 bucket), and logs the outcome.
